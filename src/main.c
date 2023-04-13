@@ -57,73 +57,6 @@ int main(void)
 	am_util_stdio_terminal_clear();
 	am_util_stdio_printf("Hello World!\r\n\r\n");
 
-	// Print the device info.
-	am_util_id_t device_id;
-	am_util_id_device(&device_id);
-	am_util_stdio_printf("Vendor Name: %s\r\n", device_id.pui8VendorName);
-	am_util_stdio_printf("Device type: %s\r\n", device_id.pui8DeviceName);
-
-	am_util_stdio_printf("Qualified: %s\r\n",
-						 device_id.sMcuCtrlDevice.ui32Qualified ?
-						 "Yes" : "No");
-
-	am_util_stdio_printf("Device Info:\r\n"
-						 "\tPart number: 0x%08X\r\n"
-						 "\tChip ID0:	0x%08X\r\n"
-						 "\tChip ID1:	0x%08X\r\n"
-						 "\tRevision:	0x%08X (Rev%c%c)\r\n",
-						 device_id.sMcuCtrlDevice.ui32ChipPN,
-						 device_id.sMcuCtrlDevice.ui32ChipID0,
-						 device_id.sMcuCtrlDevice.ui32ChipID1,
-						 device_id.sMcuCtrlDevice.ui32ChipRev,
-						 device_id.ui8ChipRevMaj, device_id.ui8ChipRevMin );
-
-	// If not a multiple of 1024 bytes, append a plus sign to the KB.
-	uint32_t mem_size = ( device_id.sMcuCtrlDevice.ui32FlashSize % 1024 ) ? '+' : 0;
-	am_util_stdio_printf("\tFlash size:  %7d (%d KB%s)\r\n",
-						 device_id.sMcuCtrlDevice.ui32FlashSize,
-						 device_id.sMcuCtrlDevice.ui32FlashSize / 1024,
-						 &mem_size);
-
-	mem_size = ( device_id.sMcuCtrlDevice.ui32SRAMSize % 1024 ) ? '+' : 0;
-	am_util_stdio_printf("\tSRAM size:   %7d (%d KB%s)\r\n\r\n",
-						 device_id.sMcuCtrlDevice.ui32SRAMSize,
-						 device_id.sMcuCtrlDevice.ui32SRAMSize / 1024,
-						 &mem_size);
-
-	// Print the compiler version.
-	am_hal_uart_tx_flush(uart.handle);
-	am_util_stdio_printf("App Compiler:	%s\r\n", COMPILER_VERSION);
-	am_util_stdio_printf("HAL Compiler:	%s\r\n", g_ui8HALcompiler);
-	am_util_stdio_printf("HAL SDK version: %d.%d.%d\r\n",
-						 g_ui32HALversion.s.Major,
-						 g_ui32HALversion.s.Minor,
-						 g_ui32HALversion.s.Revision);
-	am_util_stdio_printf("HAL compiled with %s-style registers\r\n",
-						 g_ui32HALversion.s.bAMREGS ? "AM_REG" : "CMSIS");
-
-	am_hal_security_info_t security_info;
-	uint32_t status = am_hal_security_get_info(&security_info);
-	if (status == AM_HAL_STATUS_SUCCESS)
-	{
-		char string_buffer[32];
-		if (security_info.bInfo0Valid)
-		{
-			am_util_stdio_sprintf(string_buffer, "INFO0 valid, ver 0x%X", security_info.info0Version);
-		}
-		else
-		{
-			am_util_stdio_sprintf(string_buffer, "INFO0 invalid");
-		}
-
-		am_util_stdio_printf("SBL ver: 0x%x - 0x%x, %s\r\n",
-			security_info.sblVersion, security_info.sblVersionAddInfo, string_buffer);
-	}
-	else
-	{
-		am_util_stdio_printf("am_hal_security_get_info failed 0x%X\r\n", status);
-	}
-
 	// Trigger the ADC to start collecting data
 	adc_trigger(&adc);
 
@@ -159,7 +92,13 @@ int main(void)
 			{
 				am_util_stdio_printf("Reg %02X: Value: %02X\r\n", i, lora_get_register(&lora, i));
 			}*/
-			unsigned char buffer[32] = "Hello World!!!\r\n";
+			
+			int voltage_int = voltage*10000;
+			unsigned char buffer[64]; // = "Hello World!!!\r\n";	//changed from 32
+			//sprintf(buffer, "%f = Internal voltage", voltage);
+			sprintf(buffer, "Internal voltage = %d", voltage_int);
+			//debug
+			am_util_stdio_printf(buffer);
 
 			am_util_stdio_printf("Reg %02X: Value: %02X\r\n", 1, lora_get_register(&lora, 1));
 			lora_send_packet(&lora, buffer, strlen(buffer));
