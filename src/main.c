@@ -31,6 +31,18 @@ static void error_handler(uint32_t error)
 	}
 }
 
+double  temp_convert(double voltage) 
+{
+	double Vtemp = voltage * 1000;
+	
+	double top = 5.506 - (sqrt((5.506 * 5.506) + 4 * 0.00176 * (870.6-Vtemp)));
+	double bottom = 2 * -0.00176;
+	double T = top / bottom + 30;
+
+
+	return T;
+}
+
 static struct uart uart;
 static struct adc adc;
 
@@ -87,16 +99,17 @@ int main(void)
 			// reference, which then gives us the actual voltage measured.
 			const double reference = 1.5;
 			double voltage = data * reference / ((1 << 14) - 1);
+			double temperature = temp_convert(voltage);
 
 			/*for (int i = 0; i < 0x30; ++i)
 			{
 				am_util_stdio_printf("Reg %02X: Value: %02X\r\n", i, lora_get_register(&lora, i));
 			}*/
 			
-			int voltage_int = voltage*10000;
-			unsigned char buffer[64]; // = "Hello World!!!\r\n";	//changed from 32
+			int temperature_int = temperature*10000;
+			unsigned char buffer[32];
 			//sprintf(buffer, "%f = Internal voltage", voltage);
-			sprintf(buffer, "Internal voltage = %d", voltage_int);
+			sprintf(buffer, "Temperature = %d", temperature_int);
 			//debug
 			am_util_stdio_printf(buffer);
 
