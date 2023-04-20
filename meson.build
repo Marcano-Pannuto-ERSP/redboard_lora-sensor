@@ -21,7 +21,7 @@ c_args = [
 
 link_args = [
   '--specs=nano.specs', '-nostartfiles', '-Wl,--gc-sections',
-  '-fno-exceptions', '-fno-delete-null-pointer-checks',
+  '-fno-exceptions', '-fno-delete-null-pointer-checks', 
 ]
 
 # Library

@@ -7,17 +7,21 @@
 
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #include <uart.h>
 #include <adc.h>
 #include <spi.h>
 #include <lora.h>
+#include <gpio.h>
 
 #define CHECK_ERRORS(x)\
 	if ((x) != AM_HAL_STATUS_SUCCESS)\
 	{\
 		error_handler(x);\
 	}
+
+#define STATUS_PIN 22
 
 static void error_handler(uint32_t error)
 {
@@ -45,6 +49,7 @@ double  temp_convert(double voltage)
 
 static struct uart uart;
 static struct adc adc;
+//static struct gpio gpio_pin;
 
 int main(void)
 {
@@ -61,6 +66,9 @@ int main(void)
 
 	// Initialize the ADC.
 	adc_init(&adc);
+	
+	// Initialize the status GPIO pin
+	struct gpio gpio_pin = {STATUS_PIN};
 
 	// After init is done, enable interrupts
 	am_hal_interrupt_master_enable();
@@ -85,7 +93,10 @@ int main(void)
 
 	// Wait here for the ISR to grab a buffer of samples.
 	while (1)
-	{
+	{		
+		//set status gpio pin to low (i.e. we are doing stuff now)
+		gpio_set(&gpio_pin, false);  //TODO
+		
 		// Print the battery voltage and temperature for each interrupt
 		//
 		uint32_t data = 0;
@@ -110,8 +121,9 @@ int main(void)
 			unsigned char buffer[32];
 			//sprintf(buffer, "%f = Internal voltage", voltage);
 			sprintf(buffer, "Temperature = %d", temperature_int);
+			
 			//debug
-			am_util_stdio_printf(buffer);
+			//am_util_stdio_printf(buffer);
 
 			am_util_stdio_printf("Reg %02X: Value: %02X\r\n", 1, lora_get_register(&lora, 1));
 			lora_send_packet(&lora, buffer, strlen(buffer));
@@ -121,12 +133,10 @@ int main(void)
 				lora_receive_packet(&lora, buffer, 32);
 				am_util_stdio_printf("Data: %s\r\n", buffer);
 			}
-			/*
-			am_util_stdio_printf(
-				"voltage = <%.3f> (0x%04X) ", voltage, data);
-
-			am_util_stdio_printf("\r\n");
-			*/
+			
+			//set status gpio pin to high (i.e. we are done sending packet now)
+			gpio_set(&gpio_pin, true);  //TODO
+			am_util_delay_ms(1000);		//wait 1 second
 		}
 
 		// Sleep here until the next ADC interrupt comes along.
